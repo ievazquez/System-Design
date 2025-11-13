@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # Servicio 1: Nuestra API de FastAPI
+  api:
+    build: .  # Construye la imagen desde el Dockerfile en este directorio
+    ports:
+      - "8000:8000"  # Mapea el puerto 8000 del host al 8000 del contenedor
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+       redis:  # Le dice a Compose que inicie Redis ANTES que la API
+          condition: service_healthy
+    networks:
+      - my-network-app
+
+
+  # Servicio 2: La base de datos Redis
+  redis:
+    image: "redis:alpine"  # Usa una imagen oficial y ligera de Redis
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 4s
+      retries: 5
+    networks:
+      - my-network-app
+
+networks:
+  my-network-app:
+    driver: bridge

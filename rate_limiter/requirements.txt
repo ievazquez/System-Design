@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+slowapi
+redis
+gunicorn
