@@ -1,0 +1,1 @@
+random system design snippets
