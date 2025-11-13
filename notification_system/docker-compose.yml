@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. (API)
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - mi-event-bus
+
+  # 2. Gateway (Redis)
+  redis:
+    image: "redis:alpine"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+    networks:
+      - mi-event-bus
+
+  # 3. Suscriptor 1 (Email Gateway)
+  notification_worker:
+    build: .
+    # Sobreescribimos el CMD del Dockerfile
+    command: ["python", "notification_worker.py"]
+    environment:
+      - REDIS_HOST=redis
+      - PYTHONUNBUFFERED=1 # <-- AÑADIDO: Muestra los prints al instante
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - mi-event-bus
+
+  # 4. Suscriptor 2 (Analytics)
+  analytics_worker:
+    build: .
+    # Sobreescribimos el CMD con el OTRO script
+    command: ["python", "analytics_worker.py"]
+    environment:
+      - REDIS_HOST=redis
+      - PYTHONUNBUFFERED=1 # <-- AÑADIDO: Muestra los prints al instante
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - mi-event-bus
+
+networks:
+  mi-event-bus:
+    driver: bridge
